@@ -1,0 +1,11 @@
+version: '3.8'
+services:
+  grpc-service:
+    image: your-grpc-image
+    ports:
+      - "50051:50051"  # Expose gRPC port
+    volumes:
+      - /Users/ritces/.docker/run:/app/run  # Ensure the socket path is accessible
+    environment:
+      - SOME_ENV_VAR=value  # Add any necessary environment variables
+    restart: unless-stopped  # Restart policy 

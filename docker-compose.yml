@@ -1,0 +1,73 @@
+version: "3.8" # Use a recent version
+
+services:
+  # Backend Application Service
+  backend:
+    build:
+      context: . # Use the current directory for build context
+      dockerfile: Dockerfile # Specify the Dockerfile name
+      args:
+        PORT: "3000" # Hardcoded build arg
+    container_name: corn-backend
+    restart: unless-stopped
+    environment:
+      NODE_ENV: development # Hardcoded environment
+      PORT: "3000" # Hardcoded runtime port
+      DATABASE_URL: "postgresql://postgres:postgres@postgres:5432/corn_purchases?schema=public"
+      REDIS_HOST: redis # Service name
+      REDIS_PORT: "6379"
+      REDIS_PASSWORD: redis_password # Hardcoded password (consider security implications)
+    ports:
+      # Hardcoded port mapping
+      - "3000:3000"
+    command: sh -c "pnpm exec prisma generate && pnpm run dev"
+    depends_on:
+      - postgres # Wait for postgres to be healthy (or just started)
+      - redis # Wait for redis to be healthy (or just started)
+    networks:
+      - corn-network
+
+  # PostgreSQL Database Service
+  postgres:
+    image: postgres:15-alpine # Use an official Postgres image
+    container_name: corn-postgres
+    restart: always
+    environment:
+      # Hardcoded postgres credentials
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres # Hardcoded password (consider security implications)
+      POSTGRES_DB: corn_purchases
+    volumes:
+      - postgres_data:/var/lib/postgresql/data # Persist data
+    ports:
+      # Hardcoded port mapping
+      - "5434:5432"
+    networks:
+      - corn-network
+
+  # Redis Service
+  redis:
+    image: redis:7-alpine # Use an official Redis image
+    container_name: corn-redis
+    restart: always
+    # Enable password authentication for the Redis server
+    command: redis-server --requirepass redis_password # Ensure this password matches backend env var
+    volumes:
+      - redis_data:/data # Persist data (optional for Redis cache)
+    ports:
+      # Hardcoded port mapping
+      - "6379:6379"
+    networks:
+      - corn-network
+
+# Define named volumes for data persistence
+volumes:
+  postgres_data:
+    driver: local
+  redis_data:
+    driver: local
+
+# Define a network for services to communicate
+networks:
+  corn-network:
+    driver: bridge
